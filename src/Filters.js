@@ -1,34 +1,54 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 
-const createFilter = (filterName, length = 10) => {
-  return Array.from({ length }).map((item, index) => (
-    <div key={`${filterName}-${index}`}>
-      <input type="checkbox" />
-      <label>
-        {filterName} {index + 1}
-      </label>
+const Filter = ({ filterName, length = 10, children }) => {
+  const [isOpened, setIsOpened] = useState(true);
+
+  const symbol = isOpened ? "-" : "+";
+
+  const renderOptions = () => {
+    return children
+      ? children
+      : Array.from({ length }).map((item, index) => (
+          <div key={`${filterName}-${index}`}>
+            <input type="checkbox" />
+            <label style={{ marginLeft: 8 }}>
+              {filterName} {index + 1}
+            </label>
+          </div>
+        ));
+  };
+
+  return (
+    <>
       <br />
-    </div>
-  ));
+      <button onClick={() => setIsOpened(!isOpened)}>
+        <h3>
+          {filterName} {symbol}
+        </h3>
+      </button>
+      {isOpened && renderOptions()}
+    </>
+  );
 };
 
 const Filters = forwardRef((props, ref) => {
   return (
     <div ref={ref} className="products-list__filters">
-      <h3>Brand</h3>
-      {createFilter("Brand")}
+      <Filter filterName="Brand" />
 
-      <h3>Category</h3>
-      {createFilter("Category", 20)}
+      <Filter filterName="Category" length={20} />
 
-      <h3>Price</h3>
-      <input type="range" id="points" name="points" min="0" max="500" />
+      <Filter filterName="Price">
+        <br />
+        <input type="range" id="points" name="points" min="0" max="500" />
+        <br />
+      </Filter>
 
-      <h3>Size</h3>
-      {createFilter("Size", 12)}
+      <Filter filterName="Size" length={12} />
 
-      <h3>Color</h3>
-      {createFilter("Color", 7)}
+      <Filter filterName="Colors" length={13} />
+
+      <Filter filterName="Others" length={13} />
     </div>
   );
 });
