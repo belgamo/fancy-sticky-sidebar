@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import useResizeObserver from "use-resize-observer";
 
 // import throttle from "lodash/throttle";
 
@@ -7,6 +8,7 @@ import { useCallback, useEffect, useRef } from "react";
 const useStickySidebar = ({ targetRef }) => {
   const sidebarRef = targetRef;
   const lastScrollY = useRef(0);
+  const lastSidebarHeight = useRef(0);
 
   const attachSidebarToTheTop = useCallback(() => {
     const sidebar = sidebarRef.current;
@@ -25,16 +27,38 @@ const useStickySidebar = ({ targetRef }) => {
     sidebar.style.top = `${top}px`;
   }, [sidebarRef]);
 
-  const makeSidebarScroll = useCallback(() => {
+  const makeSidebarScroll = useCallback(
+    (diff = 0) => {
+      const sidebar = sidebarRef.current;
+
+      const stickySidebarOffsetTop = sidebar.offsetTop;
+
+      sidebar.style.position = "relative";
+      const offset =
+        stickySidebarOffsetTop - diff - sidebar.parentElement?.offsetTop;
+
+      sidebar.style.top = `${offset}px`;
+    },
+    [sidebarRef]
+  );
+
+  const fixSidebarOverflow = () => {
     const sidebar = sidebarRef.current;
 
-    const stickySidebarOffsetTop = sidebar.offsetTop;
+    if (!sidebar || !sidebar.parentElement) return;
 
-    sidebar.style.position = "relative";
-    const offset = stickySidebarOffsetTop - sidebar.parentElement?.offsetTop;
+    const parentOffset = sidebar.parentElement.getBoundingClientRect().bottom;
+    const sidebarOffset = sidebar.getBoundingClientRect().bottom;
 
-    sidebar.style.top = `${offset}px`;
-  }, [sidebarRef]);
+    const overflowDetected = sidebarOffset > parentOffset;
+
+    if (overflowDetected) {
+      const diff = sidebar.offsetHeight - lastSidebarHeight.current;
+      makeSidebarScroll(diff);
+    }
+
+    lastSidebarHeight.current = sidebar.offsetHeight;
+  };
 
   const calculateAndApplyPosition = useCallback(() => {
     const sidebar = sidebarRef.current;
@@ -105,6 +129,16 @@ const useStickySidebar = ({ targetRef }) => {
       window.removeEventListener("scroll", calculateAndApplyPosition);
     };
   }, [calculateAndApplyPosition, sidebarRef]);
+
+  const onTargetResize = () => {
+    fixSidebarOverflow();
+  };
+
+  useResizeObserver({
+    ref: targetRef,
+    onResize: onTargetResize,
+    wait: 0,
+  });
 };
 
 export default useStickySidebar;
